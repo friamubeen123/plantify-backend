@@ -1,0 +1,1 @@
+web: gunicorn plantify_backend.wsgi
