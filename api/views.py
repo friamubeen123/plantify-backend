@@ -6,53 +6,23 @@ from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .serializers import ScanSerializer
 
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Scan
+from .serializers import ScanSerializer
 
-import numpy as np
-from PIL import Image
-import tensorflow as tf
-import os
 import json
 
-# ================= MODEL LOAD =================
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "plant_model.h5")
-
-model = tf.keras.models.load_model(MODEL_PATH)
-
-labels = [
-    "Pepper__bell___Bacterial_spot",
-    "Pepper__bell___healthy",
-    "Potato___Early_blight",
-    "Potato___healthy",
-    "Potato___Late_blight",
-    "Tomato__Target_Spot",
-    "Tomato__Tomato_mosaic_virus",
-    "Tomato__Tomato_YellowLeaf__Curl_Virus",
-    "Tomato_Bacterial_spot",
-    "Tomato_Early_blight",
-    "Tomato_healthy",
-    "Tomato_Late_blight",
-    "Tomato_Leaf_Mold",
-    "Tomato_Septoria_leaf_spot",
-    "Tomato_Spider_mites_Two_spotted_spider_mite",
-]
 
 # ================= LOGIN =================
-# ================= LOGIN =================
-
-
 @csrf_exempt
 def login_view(request):
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid method"}, status=405)
 
     try:
-        data = json.loads(request.body)  # ✅ handle JSON from Flutter
+        data = json.loads(request.body)
         username = data.get("username")
         password = data.get("password")
     except:
@@ -73,32 +43,6 @@ def login_view(request):
         })
 
     return JsonResponse({"success": False, "error": "Invalid credentials"}, status=401)
-
-
-# ================= PREDICT =================
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def predict(request):
-    image = request.FILES.get("image")
-
-    if image is None:
-        return Response({"error": "No image provided"}, status=400)
-
-    img = Image.open(image).resize((224, 224))
-
-    from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
-    img = np.array(img)
-    img = preprocess_input(img)
-    img = np.expand_dims(img, axis=0)
-
-    predictions = model.predict(img)[0]
-
-    top3_idx = predictions.argsort()[-3:][::-1]
-
-    return Response({
-        "top3": top3_idx.tolist(),
-        "probs": predictions[top3_idx].tolist()
-    })
 
 
 # ================= REGISTER =================
@@ -129,7 +73,10 @@ def save_scan(request):
     disease = request.data.get('disease')
     confidence = request.data.get('confidence')
 
-    scan = Scan.objects.create(
+    if not image or not disease or not confidence:
+        return Response({"error": "Missing fields"}, status=400)
+
+    Scan.objects.create(
         user=request.user,
         image=image,
         disease=disease,
@@ -138,12 +85,17 @@ def save_scan(request):
 
     return Response({"message": "Scan saved"})
 
+
+# ================= GET SCANS =================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_scans(request):
     scans = Scan.objects.filter(user=request.user).order_by('-created_at')
     serializer = ScanSerializer(scans, many=True)
     return Response(serializer.data)
+
+
+# ================= DELETE SCAN =================
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_scan(request, id):
