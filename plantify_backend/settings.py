@@ -70,15 +70,24 @@ WSGI_APPLICATION = 'plantify_backend.wsgi.application'
 # ================= DATABASE =================
 
 
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
-if not os.environ.get("DATABASE_URL"):
-    raise Exception("DATABASE_URL not set")
+
+
+if os.environ.get("DATABASE_URL"):
+    DATABASES = {
+        'default': dj_database_url.parse(
+            os.environ.get("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # ✅ Local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
+    }
 
 # ================= PASSWORD =================
 AUTH_PASSWORD_VALIDATORS = [
