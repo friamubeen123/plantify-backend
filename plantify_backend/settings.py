@@ -63,9 +63,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'plantify_backend.wsgi.application'
 
 # ================= DATABASE =================
+
+
 DATABASES = {
-    'default': dj_database_url.config(default='sqlite:///db.sqlite3')
+    'default': dj_database_url.parse(
+        os.environ.get("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
+if not os.environ.get("DATABASE_URL"):
+    raise Exception("DATABASE_URL not set")
 
 # ================= PASSWORD =================
 AUTH_PASSWORD_VALIDATORS = [
