@@ -10,3 +10,4 @@ pillow
 python-dateutil
 requests
 dj-database-url
+whitenoise
