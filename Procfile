@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn plantify_backend.wsgi
+web: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn plantify_backend.wsgi
