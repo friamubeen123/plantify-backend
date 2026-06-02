@@ -1,1 +1,1 @@
-web: gunicorn plantify_backend.wsgi
+web: python manage.py migrate && gunicorn plantify_backend.wsgi
